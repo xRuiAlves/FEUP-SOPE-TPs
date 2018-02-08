@@ -1,0 +1,21 @@
+#!/bin/bash
+
+if (("$#" != 1))
+then
+	echo "usage: cx <file>"
+	exit
+fi
+
+rm "$1" &> /dev/null	# remove executable
+rm "$1.o" &> /dev/null	# remove object file
+
+FILE_TO_COMPILE="$1.c"
+
+gcc -Wall -o "$1" "$FILE_TO_COMPILE" &> /dev/null
+
+if (("$?" != 0))
+then
+	echo "COMPILATION ERROR"
+fi
+
+./"$1"
