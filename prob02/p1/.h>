@@ -1,0 +1,639 @@
+TERMIOS(3)                 Linux Programmer's Manual                TERMIOS(3)
+
+NNAAMMEE
+       termios,  tcgetattr,  tcsetattr, tcsendbreak, tcdrain, tcflush, tcflow,
+       cfmakeraw, cfgetospeed, cfgetispeed, cfsetispeed,  cfsetospeed,  cfset‐
+       speed - get and set terminal attributes, line control, get and set baud
+       rate
+
+SSYYNNOOPPSSIISS
+       ##iinncclluuddee <<tteerrmmiiooss..hh>>
+       ##iinncclluuddee <<uunniissttdd..hh>>
+
+       iinntt ttccggeettaattttrr((iinntt _f_d,, ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p));;
+
+       iinntt ttccsseettaattttrr((iinntt _f_d,, iinntt _o_p_t_i_o_n_a_l___a_c_t_i_o_n_s,,
+                     ccoonnsstt ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p));;
+
+       iinntt ttccsseennddbbrreeaakk((iinntt _f_d,, iinntt _d_u_r_a_t_i_o_n));;
+
+       iinntt ttccddrraaiinn((iinntt _f_d));;
+
+       iinntt ttccfflluusshh((iinntt _f_d,, iinntt _q_u_e_u_e___s_e_l_e_c_t_o_r));;
+
+       iinntt ttccffllooww((iinntt _f_d,, iinntt _a_c_t_i_o_n));;
+
+       vvooiidd ccffmmaakkeerraaww((ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p));;
+
+       ssppeeeedd__tt ccffggeettiissppeeeedd((ccoonnsstt ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p));;
+
+       ssppeeeedd__tt ccffggeettoossppeeeedd((ccoonnsstt ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p));;
+
+       iinntt ccffsseettiissppeeeedd((ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p,, ssppeeeedd__tt _s_p_e_e_d));;
+
+       iinntt ccffsseettoossppeeeedd((ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p,, ssppeeeedd__tt _s_p_e_e_d));;
+
+       iinntt ccffsseettssppeeeedd((ssttrruucctt tteerrmmiiooss **_t_e_r_m_i_o_s___p,, ssppeeeedd__tt _s_p_e_e_d));;
+
+   Feature Test Macro Requirements for glibc (see ffeeaattuurree__tteesstt__mmaaccrrooss(7)):
+
+       ccffsseettssppeeeedd(), ccffmmaakkeerraaww(): _BSD_SOURCE
+
+DDEESSCCRRIIPPTTIIOONN
+       The termios functions describe a general  terminal  interface  that  is
+       provided to control asynchronous communications ports.
+
+   TThhee tteerrmmiiooss ssttrruuccttuurree
+       Many  of the functions described here have a _t_e_r_m_i_o_s___p argument that is
+       a pointer to a _t_e_r_m_i_o_s structure.  This structure contains at least the
+       following members:
+
+           tcflag_t c_iflag;      /* input modes */
+           tcflag_t c_oflag;      /* output modes */
+           tcflag_t c_cflag;      /* control modes */
+           tcflag_t c_lflag;      /* local modes */
+           cc_t     c_cc[NCCS];   /* special characters */
+
+       The  values  that  may be assigned to these fields are described below.
+       In the case of the first four bit-mask fields, the definitions of  some
+       of  the associated flags that may be set are exposed only if a specific
+       feature test macro (see ffeeaattuurree__tteesstt__mmaaccrrooss(7)) is defined, as noted in
+       brackets ("[]").
+
+       In  the  descriptions below, "not in POSIX" means that the value is not
+       specified in POSIX.1-2001, and "XSI" means that the value is  specified
+       in POSIX.1-2001 as part of the XSI extension.
+
+       _c___i_f_l_a_g flag constants:
+
+       IIGGNNBBRRKK Ignore BREAK condition on input.
+
+       BBRRKKIINNTT If  IIGGNNBBRRKK  is  set,  a  BREAK is ignored.  If it is not set but
+              BBRRKKIINNTT is set, then a BREAK causes the input and  output  queues
+              to  be  flushed, and if the terminal is the controlling terminal
+              of a foreground process group, it will cause a SSIIGGIINNTT to be sent
+              to  this  foreground  process  group.   When  neither IIGGNNBBRRKK nor
+              BBRRKKIINNTT are set, a BREAK reads as a null byte ('\0'), except when
+              PPAARRMMRRKK  is  set,  in which case it reads as the sequence \377 \0
+              \0.
+
+       IIGGNNPPAARR Ignore framing errors and parity errors.
+
+       PPAARRMMRRKK If this bit is set, input bytes with parity  or  framing  errors
+              are  marked  when passed to the program.  This bit is meaningful
+              only when IINNPPCCKK is set and IIGGNNPPAARR is not set.  The way erroneous
+              bytes  are  marked  is  with  two  preceding bytes, \377 and \0.
+              Thus, the program actually reads three bytes for  one  erroneous
+              byte  received from the terminal.  If a valid byte has the value
+              \377, and IISSTTRRIIPP (see below) is not set, the program might  con‐
+              fuse it with the prefix that marks a parity error.  Therefore, a
+              valid byte \377 is passed to the  program  as  two  bytes,  \377
+              \377, in this case.
+
+              If  neither  IIGGNNPPAARR  nor  PPAARRMMRRKK is set, read a character with a
+              parity error or framing error as \0.
+
+       IINNPPCCKK  Enable input parity checking.
+
+       IISSTTRRIIPP Strip off eighth bit.
+
+       IINNLLCCRR  Translate NL to CR on input.
+
+       IIGGNNCCRR  Ignore carriage return on input.
+
+       IICCRRNNLL  Translate carriage return to newline on input (unless  IIGGNNCCRR  is
+              set).
+
+       IIUUCCLLCC  (not in POSIX) Map uppercase characters to lowercase on input.
+
+       IIXXOONN   Enable XON/XOFF flow control on output.
+
+       IIXXAANNYY  (XSI)  Typing  any  character will restart stopped output.  (The
+              default is to allow just the START character to restart output.)
+
+       IIXXOOFFFF  Enable XON/XOFF flow control on input.
+
+       IIMMAAXXBBEELL
+              (not in POSIX) Ring bell when input queue is full.   Linux  does
+              not implement this bit, and acts as if it is always set.
+
+       IIUUTTFF88 (since Linux 2.6.4)
+              (not  in POSIX) Input is UTF8; this allows character-erase to be
+              correctly performed in cooked mode.
+
+       _c___o_f_l_a_g flag constants:
+
+       OOPPOOSSTT  Enable implementation-defined output processing.
+
+       OOLLCCUUCC  (not in POSIX) Map lowercase characters to uppercase on output.
+
+       OONNLLCCRR  (XSI) Map NL to CR-NL on output.
+
+       OOCCRRNNLL  Map CR to NL on output.
+
+       OONNOOCCRR  Don't output CR at column 0.
+
+       OONNLLRREETT Don't output CR.
+
+       OOFFIILLLL  Send fill characters for a delay,  rather  than  using  a  timed
+              delay.
+
+       OOFFDDEELL  Fill character is ASCII DEL (0177).  If unset, fill character is
+              ASCII NUL ('\0').  (Not implemented on Linux.)
+
+       NNLLDDLLYY  Newline  delay  mask.   Values  are  NNLL00  and  NNLL11.    [requires
+              __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE or __XXOOPPEENN__SSOOUURRCCEE]
+
+       CCRRDDLLYY  Carriage  return  delay mask.  Values are CCRR00, CCRR11, CCRR22, or CCRR33.
+              [requires __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE or __XXOOPPEENN__SSOOUURRCCEE]
+
+       TTAABBDDLLYY Horizontal tab delay mask.  Values are TTAABB00,  TTAABB11,  TTAABB22,  TTAABB33
+              (or  XXTTAABBSS).   A  value of TAB3, that is, XTABS, expands tabs to
+              spaces  (with  tab  stops  every  eight   columns).    [requires
+              __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE or __XXOOPPEENN__SSOOUURRCCEE]
+
+       BBSSDDLLYY  Backspace  delay  mask.  Values are BBSS00 or BBSS11.  (Has never been
+              implemented.)   [requires   __BBSSDD__SSOOUURRCCEE   or   __SSVVIIDD__SSOOUURRCCEE   or
+              __XXOOPPEENN__SSOOUURRCCEE]
+
+       VVTTDDLLYY  Vertical tab delay mask.  Values are VVTT00 or VVTT11.
+
+       FFFFDDLLYY  Form  feed  delay  mask.   Values  are  FFFF00  or  FFFF11.  [requires
+              __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE or __XXOOPPEENN__SSOOUURRCCEE]
+
+       _c___c_f_l_a_g flag constants:
+
+       CCBBAAUUDD  (not  in  POSIX)  Baud  speed  mask   (4+1   bits).    [requires
+              __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE]
+
+       CCBBAAUUDDEEXX
+              (not in POSIX) Extra baud speed mask (1 bit), included in CCBBAAUUDD.
+              [requires __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE]
+
+              (POSIX says that the baud speed is stored in the _t_e_r_m_i_o_s  struc‐
+              ture   without   specifying   where   precisely,   and  provides
+              ccffggeettiissppeeeedd() and ccffsseettiissppeeeedd() for getting at it.  Some systems
+              use  bits  selected by CCBBAAUUDD in _c___c_f_l_a_g, other systems use sepa‐
+              rate fields, for example, _s_g___i_s_p_e_e_d and _s_g___o_s_p_e_e_d.)
+
+       CCSSIIZZEE  Character size mask.  Values are CCSS55, CCSS66, CCSS77, or CCSS88.
+
+       CCSSTTOOPPBB Set two stop bits, rather than one.
+
+       CCRREEAADD  Enable receiver.
+
+       PPAARREENNBB Enable parity generation  on  output  and  parity  checking  for
+              input.
+
+       PPAARROODDDD If  set, then parity for input and output is odd; otherwise even
+              parity is used.
+
+       HHUUPPCCLL  Lower modem control lines after last process closes  the  device
+              (hang up).
+
+       CCLLOOCCAALL Ignore modem control lines.
+
+       LLOOBBLLKK  (not  in POSIX) Block output from a noncurrent shell layer.  For
+              use by sshhll (shell layers).  (Not implemented on Linux.)
+
+       CCIIBBAAUUDD (not in POSIX) Mask for input speeds.  The values for the CCIIBBAAUUDD
+              bits are the same as the values for the CCBBAAUUDD bits, shifted left
+              IIBBSSHHIIFFTT  bits.   [requires  __BBSSDD__SSOOUURRCCEE  or  __SSVVIIDD__SSOOUURRCCEE]  (Not
+              implemented on Linux.)
+
+       CCMMSSPPAARR (not  in  POSIX)  Use  "stick" (mark/space) parity (supported on
+              certain serial devices): if PPAARROODDDD is set,  the  parity  bit  is
+              always 1; if PPAARROODDDD is not set, then the parity bit is always 0.
+              [requires __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE]
+
+       CCRRTTSSCCTTSS
+              (not  in  POSIX)  Enable  RTS/CTS   (hardware)   flow   control.
+              [requires __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE]
+
+       _c___l_f_l_a_g flag constants:
+
+       IISSIIGG   When  any  of  the  characters  INTR,  QUIT,  SUSP, or DSUSP are
+              received, generate the corresponding signal.
+
+       IICCAANNOONN Enable canonical mode (described below).
+
+       XXCCAASSEE  (not in POSIX; not supported under Linux) If IICCAANNOONN is also set,
+              terminal  is  uppercase  only.  Input is converted to lowercase,
+              except for characters preceded by \.  On output, uppercase char‐
+              acters  are preceded by \ and lowercase characters are converted
+              to  uppercase.   [requires  __BBSSDD__SSOOUURRCCEE   or   __SSVVIIDD__SSOOUURRCCEE   or
+              __XXOOPPEENN__SSOOUURRCCEE]
+
+       EECCHHOO   Echo input characters.
+
+       EECCHHOOEE  If  IICCAANNOONN is also set, the ERASE character erases the preceding
+              input character, and WERASE erases the preceding word.
+
+       EECCHHOOKK  If IICCAANNOONN is also set, the KILL  character  erases  the  current
+              line.
+
+       EECCHHOONNLL If IICCAANNOONN is also set, echo the NL character even if ECHO is not
+              set.
+
+       EECCHHOOCCTTLL
+              (not in POSIX) If EECCHHOO is also set, terminal special  characters
+              other than TAB, NL, START, and STOP are echoed as ^^XX, where X is
+              the character with ASCII code  0x40  greater  than  the  special
+              character.   For  example,  character 0x08 (BS) is echoed as ^^HH.
+              [requires __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE]
+
+       EECCHHOOPPRRTT
+              (not in POSIX) If IICCAANNOONN and EECCHHOO are also set,  characters  are
+              printed  as  they  are  being  erased.  [requires __BBSSDD__SSOOUURRCCEE or
+              __SSVVIIDD__SSOOUURRCCEE]
+
+       EECCHHOOKKEE (not in POSIX) If IICCAANNOONN is also set, KILL is echoed by  erasing
+              each  character  on the line, as specified by EECCHHOOEE and EECCHHOOPPRRTT.
+              [requires __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE]
+
+       DDEEFFEECCHHOO
+              (not in POSIX) Echo only when a process is reading.  (Not imple‐
+              mented on Linux.)
+
+       FFLLUUSSHHOO (not  in  POSIX;  not  supported  under  Linux)  Output is being
+              flushed.  This flag is toggled by typing the DISCARD  character.
+              [requires __BBSSDD__SSOOUURRCCEE or __SSVVIIDD__SSOOUURRCCEE]
+
+       NNOOFFLLSSHH Disable  flushing  the  input  and output queues when generating
+              signals for the INT, QUIT, and SUSP characters.
+
+       TTOOSSTTOOPP Send the SSIIGGTTTTOOUU signal to the process  group  of  a  background
+              process which tries to write to its controlling terminal.
+
+       PPEENNDDIINN (not  in POSIX; not supported under Linux) All characters in the
+              input queue are reprinted  when  the  next  character  is  read.
+              (bbaasshh(1)  handles typeahead this way.)  [requires __BBSSDD__SSOOUURRCCEE or
+              __SSVVIIDD__SSOOUURRCCEE]
+
+       IIEEXXTTEENN Enable implementation-defined input processing.  This  flag,  as
+              well  as IICCAANNOONN must be enabled for the special characters EOL2,
+              LNEXT, REPRINT, WERASE to be interpreted, and for the IIUUCCLLCC flag
+              to be effective.
+
+       The  _c___c_c  array defines the terminal special characters.  The symbolic
+       indices (initial values) and meaning are:
+
+       VVDDIISSCCAARRDD
+              (not in POSIX; not supported under Linux; 017, SI, Ctrl-O)  Tog‐
+              gle: start/stop discarding pending output.  Recognized when IIEEXX‐‐
+              TTEENN is set, and then not passed as input.
+
+       VVDDSSUUSSPP (not in POSIX; not  supported  under  Linux;  031,  EM,  Ctrl-Y)
+              Delayed  suspend character (DSUSP): send SSIIGGTTSSTTPP signal when the
+              character is read by the user program.  Recognized  when  IIEEXXTTEENN
+              and  IISSIIGG are set, and the system supports job control, and then
+              not passed as input.
+
+       VVEEOOFF   (004, EOT, Ctrl-D) End-of-file character (EOF).  More precisely:
+              this  character  causes the pending tty buffer to be sent to the
+              waiting user program without waiting for end-of-line.  If it  is
+              the first character of the line, the rreeaadd(2) in the user program
+              returns 0, which signifies end-of-file.  Recognized when  IICCAANNOONN
+              is set, and then not passed as input.
+
+       VVEEOOLL   (0,  NUL)  Additional  end-of-line  character (EOL).  Recognized
+              when IICCAANNOONN is set.
+
+       VVEEOOLL22  (not in POSIX; 0, NUL) Yet another end-of-line character (EOL2).
+              Recognized when IICCAANNOONN is set.
+
+       VVEERRAASSEE (0177, DEL, rubout, or 010, BS, Ctrl-H, or also #) Erase charac‐
+              ter (ERASE).  This erases the previous not-yet-erased character,
+              but  does  not  erase past EOF or beginning-of-line.  Recognized
+              when IICCAANNOONN is set, and then not passed as input.
+
+       VVIINNTTRR  (003, ETX, Ctrl-C, or also 0177, DEL, rubout) Interrupt  charac‐
+              ter (INTR).  Send a SSIIGGIINNTT signal.  Recognized when IISSIIGG is set,
+              and then not passed as input.
+
+       VVKKIILLLL  (025, NAK, Ctrl-U, or Ctrl-X, or also @) Kill character  (KILL).
+              This  erases  the input since the last EOF or beginning-of-line.
+              Recognized when IICCAANNOONN is set, and then not passed as input.
+
+       VVLLNNEEXXTT (not in POSIX; 026, SYN, Ctrl-V) Literal next  (LNEXT).   Quotes
+              the  next  input  character,  depriving it of a possible special
+              meaning.  Recognized when IIEEXXTTEENN is set, and then not passed  as
+              input.
+
+       VVMMIINN   Minimum number of characters for noncanonical read (MIN).
+
+       VVQQUUIITT  (034,  FS,  Ctrl-\) Quit character (QUIT).  Send SSIIGGQQUUIITT signal.
+              Recognized when IISSIIGG is set, and then not passed as input.
+
+       VVRREEPPRRIINNTT
+              (not in POSIX; 022, DC2, Ctrl-R) Reprint unread characters  (RE‐
+              PRINT).  Recognized when IICCAANNOONN and IIEEXXTTEENN are set, and then not
+              passed as input.
+
+       VVSSTTAARRTT (021, DC1, Ctrl-Q) Start  character  (START).   Restarts  output
+              stopped by the Stop character.  Recognized when IIXXOONN is set, and
+              then not passed as input.
+
+       VVSSTTAATTUUSS
+              (not in POSIX; not supported under Linux; status  request:  024,
+              DC4, Ctrl-T).  Status character (STATUS).  Display status infor‐
+              mation at terminal, including state of  foreground  process  and
+              amount of CPU time it has consumed.  Also sends a SSIIGGIINNFFOO signal
+              (not supported on Linux) to the foreground process group.
+
+       VVSSTTOOPP  (023, DC3, Ctrl-S) Stop character  (STOP).   Stop  output  until
+              Start  character  typed.   Recognized when IIXXOONN is set, and then
+              not passed as input.
+
+       VVSSUUSSPP  (032, SUB, Ctrl-Z) Suspend character (SUSP).  Send SSIIGGTTSSTTPP  sig‐
+              nal.  Recognized when IISSIIGG is set, and then not passed as input.
+
+       VVSSWWTTCCHH (not in POSIX; not supported under Linux; 0, NUL) Switch charac‐
+              ter (SWTCH).  Used in System V to switch shells in _s_h_e_l_l _l_a_y_e_r_s,
+              a predecessor to shell job control.
+
+       VVTTIIMMEE  Timeout in deciseconds for noncanonical read (TIME).
+
+       VVWWEERRAASSEE
+              (not  in  POSIX;  027, ETB, Ctrl-W) Word erase (WERASE).  Recog‐
+              nized when IICCAANNOONN and IIEEXXTTEENN are set, and  then  not  passed  as
+              input.
+
+       An individual terminal special character can be disabled by setting the
+       value of the corresponding _c___c_c element to __PPOOSSIIXX__VVDDIISSAABBLLEE.
+
+       The above symbolic subscript values  are  all  different,  except  that
+       VVTTIIMMEE,  VVMMIINN  may  have the same value as VVEEOOLL, VVEEOOFF, respectively.  In
+       noncanonical mode the special character  meaning  is  replaced  by  the
+       timeout  meaning.   For  an  explanation  of  VVMMIINN  and  VVTTIIMMEE, see the
+       description of noncanonical mode below.
+
+   RReettrriieevviinngg aanndd cchhaannggiinngg tteerrmmiinnaall sseettttiinnggss
+       ttccggeettaattttrr() gets the parameters associated with the object referred  by
+       _f_d  and  stores  them in the _t_e_r_m_i_o_s structure referenced by _t_e_r_m_i_o_s___p.
+       This function may be invoked from a background  process;  however,  the
+       terminal  attributes  may  be  subsequently  changed  by  a  foreground
+       process.
+
+       ttccsseettaattttrr() sets the parameters associated with  the  terminal  (unless
+       support is required from the underlying hardware that is not available)
+       from the _t_e_r_m_i_o_s structure referred to by _t_e_r_m_i_o_s___p.   _o_p_t_i_o_n_a_l___a_c_t_i_o_n_s
+       specifies when the changes take effect:
+
+       TTCCSSAANNOOWW
+              the change occurs immediately.
+
+       TTCCSSAADDRRAAIINN
+              the change occurs after all output written to _f_d has been trans‐
+              mitted.  This option should be  used  when  changing  parameters
+              that affect output.
+
+       TTCCSSAAFFLLUUSSHH
+              the  change  occurs  after  all  output  written  to  the object
+              referred by _f_d has been transmitted, and all input that has been
+              received  but  not  read  will be discarded before the change is
+              made.
+
+   CCaannoonniiccaall aanndd nnoonnccaannoonniiccaall mmooddee
+       The setting of the IICCAANNOONN canon flag in _c___l_f_l_a_g determines whether  the
+       terminal  is  operating  in canonical mode (IICCAANNOONN set) or noncanonical
+       mode (IICCAANNOONN unset).  By default, IICCAANNOONN set.
+
+       In canonical mode:
+
+       * Input is made available line by line.  An  input  line  is  available
+         when  one  of  the line delimiters is typed (NL, EOL, EOL2; or EOF at
+         the start of line).  Except in the case of EOF, the line delimiter is
+         included in the buffer returned by rreeaadd(2).
+
+       * Line  editing is enabled (ERASE, KILL; and if the IIEEXXTTEENN flag is set:
+         WERASE, REPRINT, LNEXT).  A rreeaadd(2)  returns  at  most  one  line  of
+         input; if the rreeaadd(2) requested fewer bytes than are available in the
+         current line of input, then only as many bytes as requested are read,
+         and the remaining characters will be available for a future rreeaadd(2).
+
+       In  noncanonical  mode input is available immediately (without the user
+       having to type a line-delimiter character), no input processing is per‐
+       formed, and line editing is disabled.  The settings of MIN (_c___c_c_[_V_M_I_N_])
+       and TIME (_c___c_c_[_V_T_I_M_E_]) determine the circumstances in which  a  rreeaadd(2)
+       completes; there are four distinct cases:
+
+       MIN == 0, TIME == 0 (polling read)
+              If  data  is  available,  rreeaadd(2)  returns immediately, with the
+              lesser of the number of bytes available, or the number of  bytes
+              requested.  If no data is available, rreeaadd(2) returns 0.
+
+       MIN > 0, TIME == 0 (blocking read)
+              rreeaadd(2)  blocks until MIN bytes are available, and returns up to
+              the number of bytes requested.
+
+       MIN == 0, TIME > 0 (read with timeout)
+              TIME specifies the limit for a timer in tenths of a second.  The
+              timer is started when rreeaadd(2) is called.  rreeaadd(2) returns either
+              when at least one byte of data is available, or when  the  timer
+              expires.  If the timer expires without any input becoming avail‐
+              able, rreeaadd(2) returns 0.  If data is already  available  at  the
+              time of the call to rreeaadd(2), the call behaves as though the data
+              was received immediately after the call.
+
+       MIN > 0, TIME > 0 (read with interbyte timeout)
+              TIME specifies the limit for a timer  in  tenths  of  a  second.
+              Once  an  initial  byte of input becomes available, the timer is
+              restarted after each further byte is received.  rreeaadd(2)  returns
+              when any of the following conditions is met:
+
+              *  MIN bytes have been received.
+
+              *  The interbyte timer expires.
+
+              *  The  number  of bytes requested by rreeaadd(2) has been received.
+                 (POSIX does not specify this termination  condition,  and  on
+                 some  other  implementations  rreeaadd(2) does not return in this
+                 case.)
+
+              Because the timer is started only after the initial byte becomes
+              available,  at  least one byte will be read.  If data is already
+              available at the time of the call to rreeaadd(2), the  call  behaves
+              as though the data was received immediately after the call.
+
+       POSIX  does not specify whether the setting of the OO__NNOONNBBLLOOCCKK file sta‐
+       tus flag takes precedence over the MIN and TIME  settings.   If  OO__NNOONN‐‐
+       BBLLOOCCKK  is  set,  a rreeaadd(2) in noncanonical mode may return immediately,
+       regardless of the setting of MIN or TIME.  Furthermore, if no  data  is
+       available,  POSIX  permits  a  rreeaadd(2)  in  noncanonical mode to return
+       either 0, or -1 with _e_r_r_n_o set to EEAAGGAAIINN.
+
+   RRaaww mmooddee
+       ccffmmaakkeerraaww() sets the terminal to something like the "raw" mode  of  the
+       old  Version 7 terminal driver: input is available character by charac‐
+       ter, echoing is disabled, and all special processing of terminal  input
+       and  output characters is disabled.  The terminal attributes are set as
+       follows:
+
+           termios_p->c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP
+                           | INLCR | IGNCR | ICRNL | IXON);
+           termios_p->c_oflag &= ~OPOST;
+           termios_p->c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+           termios_p->c_cflag &= ~(CSIZE | PARENB);
+           termios_p->c_cflag |= CS8;
+
+   LLiinnee ccoonnttrrooll
+       ttccsseennddbbrreeaakk() transmits a continuous stream of zero-valued bits  for  a
+       specific  duration,  if  the terminal is using asynchronous serial data
+       transmission.  If _d_u_r_a_t_i_o_n is zero, it transmits zero-valued  bits  for
+       at  least  0.25 seconds, and not more that 0.5 seconds.  If _d_u_r_a_t_i_o_n is
+       not zero, it sends zero-valued  bits  for  some  implementation-defined
+       length of time.
+
+       If  the  terminal  is  not using asynchronous serial data transmission,
+       ttccsseennddbbrreeaakk() returns without taking any action.
+
+       ttccddrraaiinn() waits until all output written to the object referred  to  by
+       _f_d has been transmitted.
+
+       ttccfflluusshh() discards data written to the object referred to by _f_d but not
+       transmitted, or data received but not read, depending on the  value  of
+       _q_u_e_u_e___s_e_l_e_c_t_o_r:
+
+       TTCCIIFFLLUUSSHH
+              flushes data received but not read.
+
+       TTCCOOFFLLUUSSHH
+              flushes data written but not transmitted.
+
+       TTCCIIOOFFLLUUSSHH
+              flushes  both  data  received but not read, and data written but
+              not transmitted.
+
+       ttccffllooww() suspends transmission or  reception  of  data  on  the  object
+       referred to by _f_d, depending on the value of _a_c_t_i_o_n:
+
+       TTCCOOOOFFFF suspends output.
+
+       TTCCOOOONN  restarts suspended output.
+
+       TTCCIIOOFFFF transmits a STOP character, which stops the terminal device from
+              transmitting data to the system.
+
+       TTCCIIOONN  transmits a START character, which starts  the  terminal  device
+              transmitting data to the system.
+
+       The  default  on  open of a terminal file is that neither its input nor
+       its output is suspended.
+
+   LLiinnee ssppeeeedd
+       The baud rate functions are provided for getting and setting the values
+       of  the  input and output baud rates in the _t_e_r_m_i_o_s structure.  The new
+       values do not take effect until ttccsseettaattttrr() is successfully called.
+
+       Setting the speed to BB00 instructs the modem to "hang up".   The  actual
+       bit rate corresponding to BB3388440000 may be altered with sseettsseerriiaall(8).
+
+       The input and output baud rates are stored in the _t_e_r_m_i_o_s structure.
+
+       ccffggeettoossppeeeedd() returns the output baud rate stored in the _t_e_r_m_i_o_s struc‐
+       ture pointed to by _t_e_r_m_i_o_s___p.
+
+       ccffsseettoossppeeeedd() sets the output baud rate stored in the _t_e_r_m_i_o_s structure
+       pointed to by _t_e_r_m_i_o_s___p to _s_p_e_e_d, which must be one of these constants:
+
+            BB00
+            BB5500
+            BB7755
+            BB111100
+            BB113344
+            BB115500
+            BB220000
+            BB330000
+            BB660000
+            BB11220000
+            BB11880000
+            BB22440000
+            BB44880000
+            BB99660000
+            BB1199220000
+            BB3388440000
+            BB5577660000
+            BB111155220000
+            BB223300440000
+
+       The  zero baud rate, BB00, is used to terminate the connection.  If B0 is
+       specified, the modem control lines shall no longer be  asserted.   Nor‐
+       mally, this will disconnect the line.  CCBBAAUUDDEEXX is a mask for the speeds
+       beyond those defined in POSIX.1 (57600  and  above).   Thus,  BB5577660000  &
+       CCBBAAUUDDEEXX is nonzero.
+
+       ccffggeettiissppeeeedd()  returns the input baud rate stored in the _t_e_r_m_i_o_s struc‐
+       ture.
+
+       ccffsseettiissppeeeedd() sets the input baud rate stored in the _t_e_r_m_i_o_s  structure
+       to  _s_p_e_e_d,  which must be specified as one of the BBnnnnnn constants listed
+       above for ccffsseettoossppeeeedd().  If the input baud rate is set  to  zero,  the
+       input baud rate will be equal to the output baud rate.
+
+       ccffsseettssppeeeedd()  is  a  4.4BSD  extension.  It takes the same arguments as
+       ccffsseettiissppeeeedd(), and sets both input and output speed.
+
+RREETTUURRNN VVAALLUUEE
+       ccffggeettiissppeeeedd() returns the input baud rate stored in the _t_e_r_m_i_o_s  struc‐
+       ture.
+
+       ccffggeettoossppeeeedd() returns the output baud rate stored in the _t_e_r_m_i_o_s struc‐
+       ture.
+
+       All other functions return:
+
+       0      on success.
+
+       -1     on failure and set _e_r_r_n_o to indicate the error.
+
+       Note that ttccsseettaattttrr() returns success if _a_n_y of the  requested  changes
+       could  be  successfully  carried  out.  Therefore, when making multiple
+       changes it may be necessary to follow this call with a further call  to
+       ttccggeettaattttrr() to check that all changes have been performed successfully.
+
+AATTTTRRIIBBUUTTEESS
+       For   an   explanation   of   the  terms  used  in  this  section,  see
+       aattttrriibbuutteess(7).
+
+       ┌─────────────────────────────────────┬───────────────┬─────────┐
+       │IInntteerrffaaccee                            │ AAttttrriibbuuttee     │ VVaalluuee   │
+       ├─────────────────────────────────────┼───────────────┼─────────┤
+       │ttccggeettaattttrr(), ttccsseettaattttrr(), ttccddrraaiinn(), │ Thread safety │ MT-Safe │
+       │ttccfflluusshh(), ttccffllooww(), ttccsseennddbbrreeaakk(),  │               │         │
+       │ccffmmaakkeerraaww(), ccffggeettiissppeeeedd(),          │               │         │
+       │ccffggeettoossppeeeedd(), ccffsseettiissppeeeedd(),        │               │         │
+       │ccffsseettoossppeeeedd(), ccffsseettssppeeeedd()          │               │         │
+       └─────────────────────────────────────┴───────────────┴─────────┘
+CCOONNFFOORRMMIINNGG TTOO
+       ttccggeettaattttrr(),   ttccsseettaattttrr(),   ttccsseennddbbrreeaakk(),   ttccddrraaiinn(),    ttccfflluusshh(),
+       ttccffllooww(),   ccffggeettiissppeeeedd(),   ccffggeettoossppeeeedd(),  ccffsseettiissppeeeedd(),  and  ccffssee‐‐
+       ttoossppeeeedd() are specified in POSIX.1-2001.
+
+       ccffmmaakkeerraaww() and ccffsseettssppeeeedd() are nonstandard, but available on the  BS‐
+       Ds.
+
+NNOOTTEESS
+       UNIX V7 and several later systems have a list of baud rates where after
+       the fourteen values B0, ..., B9600 one finds the  two  constants  EXTA,
+       EXTB  ("External  A"  and  "External B").  Many systems extend the list
+       with much higher baud rates.
+
+       The effect of a nonzero  _d_u_r_a_t_i_o_n  with  ttccsseennddbbrreeaakk()  varies.   SunOS
+       specifies  a  break  of _d_u_r_a_t_i_o_n _* _N seconds, where _N is at least 0.25,
+       and not more than 0.5.  Linux, AIX, DU, Tru64 send a break of  _d_u_r_a_t_i_o_n
+       milliseconds.   FreeBSD and NetBSD and HP-UX and MacOS ignore the value
+       of _d_u_r_a_t_i_o_n.  Under Solaris and UnixWare,  ttccsseennddbbrreeaakk()  with  nonzero
+       _d_u_r_a_t_i_o_n behaves like ttccddrraaiinn().
+
+SSEEEE AALLSSOO
+       rreesseett(1),  sseetttteerrmm(1),  ssttttyy(1),  ttppuutt(1),  ttsseett(1),  ccoonnssoollee__iiooccttll(4),
+       ttttyy__iiooccttll(4), sseettsseerriiaall(8)
+
+CCOOLLOOPPHHOONN
+       This page is part of release 4.04 of the Linux  _m_a_n_-_p_a_g_e_s  project.   A
+       description  of  the project, information about reporting bugs, and the
+       latest    version    of    this    page,    can     be     found     at
+       http://www.kernel.org/doc/man-pages/.
+
+Linux                             2015-12-05                        TERMIOS(3)
