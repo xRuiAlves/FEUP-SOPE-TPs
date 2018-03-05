@@ -6,7 +6,6 @@ Exercises solutions for the SOPE curricular unit.
 * **Date:** 2nd Year, 2nd Semester, 2017/2018
 * **Course:** Sistemas Operativos (SOPE) | Algorithms and Data Structures
 * **Course Link:** https://sigarra.up.pt/feup/pt/ucurr_geral.ficha_uc_view?pv_ocorrencia_id=399893
-* **Project's Collaboration:** Miguel Pereira Duarte (miguelpduarte)
 
 
 ### Disclaimer

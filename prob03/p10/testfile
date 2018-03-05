@@ -1,0 +1,7 @@
+hello.:
+total 28
+drwxrwxr-x  2 rui rui 4096 Fev 28 21:00 .
+drwxrwxr-x 14 rui rui 4096 Fev 26 14:19 ..
+-rw-rw-r--  1 rui rui 1745 Fev 28 21:00 p10a.c
+-rwxrwxr-x  1 rui rui 9120 Fev 28 21:00 p10a.out
+-rw-r--r--  1 rui rui    5 Fev 28 21:00 testfile
