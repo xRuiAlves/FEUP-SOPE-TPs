@@ -5,20 +5,21 @@
 
 void sigint_handler(int signo) {
     printf("In SIGINT handler ...\n");
+    sleep(15);
+    printf("Exiting Sig Handler\n");
 }
 
 int main(void) {
-
-    if (signal(SIGINT,sigint_handler) < 0) {
-        fprintf(stderr,"Unable to install SIGINT handler\n");
-        exit(1);
-    }
     
-    struct sigaction action;
-    action.sa_handler = sigint_handler;
+    struct sigaction int_action;
     
-    sigemptyset( &(action.sa_mask) );
-    sigaddset( &(action.sa_mask) , SIGTERM );
+    int_action.sa_handler = sigint_handler;
+    
+    sigemptyset( &(int_action.sa_mask) );
+    sigaddset( &(int_action.sa_mask) , SIGTERM );
+    
+    sigaction(SIGINT , &int_action , NULL);
+    
     
     printf("Sleeping for 30 seconds ...\n");
     int sleep_return = sleep(30);
