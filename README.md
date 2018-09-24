@@ -1,6 +1,6 @@
 # Sistemas Operativos / Operative Systems 2017-2018
 Exercises solutions for the SOPE curricular unit.
-<br/><b>Final Grade: TO BE DETERMINED</b>
+<br/><b>Final Grade: 19</b>
 
 ### Project Infos
 * **Date:** 2nd Year, 2nd Semester, 2017/2018
